@@ -3,6 +3,7 @@ import _ from 'lodash';
 import rp from 'request-promise-native';
 import uuid from 'node-uuid';
 import moment from 'moment-timezone';
+import nodemailer from 'nodemailer';
 
 const oauth = require('simple-oauth2');
 
@@ -374,6 +375,23 @@ const getLoginUrl = (user, bucket, clientKeyTpl, redirectUrl, scope) => {
       user));
 };
 
+const sendEmail = (server, options) => new Promise((resolve, reject) => {
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: server,
+  });
+  transporter.sendMail(options, (error, info) => {
+    if (error) {
+      reject(error);
+    } else {
+      resolve(info);
+    }
+  });
+});
+
 export { sendTopic,
   sendMessage,
   fetchMessage,
@@ -395,4 +413,5 @@ export { sendTopic,
   authorize,
   getLoginUrl,
   fillInUser,
+  sendEmail,
 };

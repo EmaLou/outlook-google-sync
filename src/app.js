@@ -10,6 +10,7 @@ import {
   refreshTokens,
   authorize,
   getLoginUrl,
+  sendEmail,
 } from './api';
 
 module.exports.login = (event, context, cb) => {
@@ -133,7 +134,26 @@ module.exports.add_user = (event, context, cb) => {
   const userInfoKeyTpl = _.get(event, 'stageVariables.user_info_key');
   const googleClientKeyTpl = _.get(event, 'stageVariables.google_client_key');
   const outlookClientKeyTpl = _.get(event, 'stageVariables.outlook_client_key');
+  const serverEmailAddress = _.get(event, 'stageVariables.server_email_address');
+  const stage = _.get(event, 'requestContext.stage');
+  const googleLoginUrl = `https://${event.headers.Host}/${stage}/google/login?id=${newUser.name}`;
+  const outlookLoginUrl = `https://${event.headers.Host}/${stage}/outlook/login?id=${newUser.name}`;
   addUser(newUser, bucket, userInfoKeyTpl, googleClientKeyTpl, outlookClientKeyTpl, googleClient, outlookClient)
+    .then(() => {
+      if (_.has(newUser, 'email')) {
+        const server = { user: serverEmailAddress, pass: 'Sjm*19861985' };
+        const options = {
+          from: serverEmailAddress,
+          to: newUser.email,
+          subject: 'Please verify your gmail and outlook token',
+          html: `<a herf="${googleLoginUrl}">Gmail</a> <br/> <a herf="${outlookLoginUrl}">Outlook</a>`,
+        };
+
+        return sendEmail(server, options);
+      }
+
+      return null;
+    })
     .then(() => {
       cb(null, { statusCode: 200, headers: { 'Access-Control-Allow-Origin': '*' }, body: 'Success to add user' });
       console.log('Success to add user');
